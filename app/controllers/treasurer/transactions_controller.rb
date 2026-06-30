@@ -58,9 +58,7 @@ class Treasurer::TransactionsController < Treasurer::BaseController
   private
 
   def find_transaction
-    Transaction.joins(:purchaser)
-      .where(purchaser: { organization: current_organization })
-      .find(params[:id])
+    Transaction.preload(:purchaser).find(params[:id])
   end
 
   def transaction_params

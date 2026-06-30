@@ -30,12 +30,12 @@ Rails.application.routes.draw do
           post :add_to_cart
           post :checkout
           post :remove_from_cart
-          delete :clear_cart
+          post :clear_cart
         end
       end
       resources :payments, only: [ :show ]
+      resources :mixed_crates, only: [ :create ]
     end
-    resources :mixed_crates, only: [ :create ]
   end
 
   # Kassenwart

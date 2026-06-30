@@ -1,6 +1,5 @@
 class Transaction < ApplicationRecord
   belongs_to :organization
-  belongs_to :member
   belongs_to :purchaser, polymorphic: true
   belongs_to :product, optional: true
 

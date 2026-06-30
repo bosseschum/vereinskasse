@@ -4,10 +4,12 @@
   <%= form_with model: @transaction, url: treasurer_transactions_path do |f| %>
 
     <div class="mb-4">
-      <%= f.label :member_id, "Mitglied", class: "block text-gray-400 text-sm mb-1" %>
-      <%= f.select :member_id, @members.map { |m| [m.display_name, m.id] },
+    <%= f.label :purchaser_id, "Mitglied", class: "block text-gray-400 text-sm mb-1" %>
+    <%= f.hidden_field :purchaser_type, value: "Member" %>
+    <%= f.select :purchaser_id,
+        @members.map { |m| [m.display_name, m.id] },
         { selected: params[:member_id] },
-      class: "w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2" %>
+        class: "w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2" %>
     </div>
 
     <div class="mb-4">

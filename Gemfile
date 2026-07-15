@@ -68,6 +68,7 @@ group :development do
   gem "web-console"
   gem "ruby-lsp", require: false
   gem "kanayago"
+  gem "solargraph"
 end
 
 group :test do

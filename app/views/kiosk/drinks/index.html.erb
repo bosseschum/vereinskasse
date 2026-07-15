@@ -1,247 +1,285 @@
 <%= turbo_frame_tag "kiosk" do %>
   <div class="min-h-screen bg-gray-950 text-white p-8">
     <div class="max-w-7xl mx-auto">
-    <%# Flash Messages %>
-    <% if notice %>
-      <div class="mb-4 p-4 bg-green-700 rounded-xl text-lg text-center font-semibold">
-        <%= notice %>
-      </div>
-    <% end %>
-    <% if alert %>
-      <div class="mb-4 p-4 bg-red-700 rounded-xl text-lg text-center font-semibold">
-        <%= alert %>
-      </div>
-    <% end %>
 
-    <% if @purchaser && @pin_verified %>
-      <div class="mb-8 bg-gray-900 border border-gray-800 rounded-3xl p-6">
-        <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p class="text-sm uppercase tracking-wide text-gray-500">
-              Eingeloggt als
-            </p>
-            <h1 class="text-3xl font-bold mt-1 wrap-break-words">
-              <%= @purchaser.display_name %>
-              <% if @purchaser.is_a?(Member) %>
-                <span class="text-sm text-gray-500">
-                  <p class="mt-2 text-xl font-semibold <%= @purchaser.balance >= 0 ? 'text-green-400' : 'text-red-400' %>">
-                    Saldo: <%= format("%.2f", @purchaser.balance) %> €
-                  </p>
-                </span>
-                <% else %>
-                  <span class="text-sm text-gray-400">Gast - Rechnung folgt</span>
-                <% end %>
-              </h1>
+      <%# Flash – animiertes Overlay beim Kauf %>
+      <% if notice %>
+        <div id="flash-notice"
+             class="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
+          <div class="bg-green-600 text-white px-10 py-8 rounded-2xl shadow-2xl text-center"
+               style="animation: checkmark 0.4s ease-out forwards">
+            <div class="text-6xl mb-3">✓</div>
+            <p class="text-xl font-bold"><%= notice %></p>
           </div>
-          <div class="grid grid-cols-2 gap-3 w-full lg:w-auto">
+        </div>
+        <script nonce="<%= request.content_security_policy_nonce %>">
+          setTimeout(() => {
+            const flash = document.getElementById("flash-notice")
+            if (flash) {
+              flash.style.transition = "opacity 0.3s ease-out"
+              flash.style.opacity = "0"
+              setTimeout(() => flash.remove(), 300)
+            }
+          }, 2000)
+        </script>
+      <% end %>
+
+      <% if alert %>
+        <div class="mb-4 p-4 bg-red-700 rounded-xl text-lg text-center font-semibold">
+          <%= alert %>
+        </div>
+      <% end %>
+
+      <% if @purchaser && @pin_verified %>
+        <%# Header: Nutzer + Saldo %>
+        <div class="mb-8 bg-gray-900 border border-gray-800 rounded-3xl p-6"
+             data-controller="cart">
+          <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p class="text-sm uppercase tracking-wide text-gray-500">Eingeloggt als</p>
+              <h1 class="text-3xl font-bold mt-1 wrap-break-word">
+                <%= @purchaser.display_name %>
+              </h1>
+              <% if @purchaser.is_a?(Member) %>
+                <p class="mt-2 text-xl font-semibold <%= @purchaser.balance >= 0 ? 'text-green-400' : 'text-red-400' %>">
+                  Saldo: <%= format("%.2f", @purchaser.balance) %> €
+                </p>
+              <% else %>
+                <p class="mt-2 text-sm text-gray-400">Gast – Rechnung folgt</p>
+              <% end %>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 w-full lg:w-auto">
               <% if @purchaser.is_a?(Member) %>
                 <%= link_to "💳 Guthaben aufladen",
-                  kiosk_payment_path(@purchaser, pin: params[:pin]),
-                  data: { turbo_frame: "_top" },
-                  class: "bg-emerald-600 hover:bg-emerald-500 px-5 py-3 rounded-2xl font-semibold text-center" %>
-                <%= link_to "Abmelden",
-                  kiosk_root_path,
-                  class: "bg-gray-700 hover:bg-gray-600 px-5 py-3 rounded-2xl font-semibold text-center" %>
+                      kiosk_payment_path(@purchaser, pin: params[:pin]),
+                      data: { turbo_frame: "_top" },
+                      class: "bg-emerald-600 hover:bg-emerald-500 px-5 py-3
+                              rounded-2xl font-semibold text-center transition" %>
               <% end %>
+              <%= link_to "Abmelden",
+                    kiosk_root_path,
+                    class: "bg-gray-700 hover:bg-gray-600 px-5 py-3
+                            rounded-2xl font-semibold text-center transition" %>
+            </div>
           </div>
         </div>
-      </div>
 
-      <%# Produkte %>
-      <h2 class="text-2xl font-semibold mb-6 text-gray-300">
-        Getränk wählen
-      </h2>
-      <div class="grid grid-cols-2 lg:grid-cols-3 gap-5">
-        <% @products.each do |product| %>
-          <div class="bg-gray-900 rounded-2xl p-5 border border-gray-800 flex flex-col justify-between">
-            <div>
-              <h3 class="text-lg font-bold mb-2 leading-tight">
-                <%= product.name %>
-              </h3>
-              <div class="space-y-2 text-sm text-gray-400">
-                <div>
-                  Einzelpreis:
-                  <span class="text-white font-semibold">
-                    <%= format("%.2f", product.price) %> €
-                  </span>
-                </div>
-                <% if product.has_crate? %>
-                  <div>
-                    Kasten:
-                    <span class="text-white font-semibold">
-                      <%= product.crate_size %> Flaschen
-                    </span>
-                  </div>
-                  <div>
-                    Kastenpreis:
-                    <span class="text-emerald-400 font-semibold">
-                      <%= format("%.2f", product.crate_price) %> €
-                    </span>
-                  </div>
-                <% end %>
-              </div>
-            </div>
-            <div class="mt-5 space-y-3">
-
-              <%# Einzelne Flasche %>
-              <%= form_tag add_to_cart_kiosk_drinks_path, method: :post do %>
-                <%= hidden_field_tag :pin, params[:pin] %>
-                <%= hidden_field_tag :product_id, product.id %>
-                <%= hidden_field_tag :quantity, 1 %>
-
-                <button
-                  type="submit"
-                  class="
-                    w-full
-                    bg-blue-700
-                    hover:bg-blue-600
-                    active:scale-95
-                    transition
-                    rounded-xl
-                    py-4
-                    font-semibold
-                  ">
-                  + 1 Flasche
-                </button>
-              <% end %>
-
-              <%# Ganzer Kasten %>
-              <% if product.has_crate? %>
-                <%= form_tag add_to_cart_kiosk_drinks_path, method: :post do %>
-                  <%= hidden_field_tag :pin, params[:pin] %>
-                  <%= hidden_field_tag :product_id, product.id %>
-                  <%= hidden_field_tag :quantity, product.crate_size %>
-
-                  <button
-                    type="submit"
-                    class="
-                      w-full
-                      bg-emerald-700
-                      hover:bg-emerald-600
-                      active:scale-95
-                      transition
-                      rounded-xl
-                      py-4
-                      font-semibold
-                    ">
-                    + 1 Kasten
-                  </button>
-                <% end %>
-              <% end %>
-            </div>
-          </div>
-        <% end %>
-      </div>
-
-      <%# Warenkorb %>
-      <% if @cart_items.any? %>
-        <div class="mt-10 bg-gray-900 rounded-3xl p-8 border border-gray-800">
-          <h2 class="text-xl font-semibold mb-4 text-gray-300">🛒 Warenkorb</h2>
-          <div class="space-y-2 mb-4">
-            <% @cart_items.each do |item| %>
-              <% is_crate = item[:product].has_crate? && item[:quantity] == item[:product].crate_size %>
-              <% item_total = is_crate ? item[:product].crate_price_cents : item[:product].price_cents * item[:quantity] %>
-              <div class="flex items-center justify-between">
-                <span class="text-gray-300">
-                  <%= item[:quantity] %>x <%= item[:product].name %>
-                  <% if is_crate %>
-                    <span class="text-emerald-400 text-xs ml-1">(Kastenpreis)</span>
-                  <% end %>
+        <%# Produktliste %>
+        <div data-controller="cart">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-semibold text-gray-300">Getränk wählen</h2>
+            <%# Warenkorb-Badge %>
+            <% if @cart_items.any? %>
+              <div class="relative inline-block" data-cart-target="badge">
+                <span class="text-3xl">🛒</span>
+                <span data-cart-target="badgeCount"
+                      class="absolute -top-2 -right-2 bg-red-500 text-white
+                             text-xs rounded-full w-6 h-6 flex items-center
+                             justify-center font-bold">
+                  <%= @total_quantity %>
                 </span>
-                <div class="flex items-center gap-4">
-                  <span class="font-mono text-gray-300">
-                    <%= format("%.2f", item_total / 100.0) %>€
-                  </span>
-                  <%= form_tag remove_from_cart_kiosk_drinks_path, method: :post do %>
+              </div>
+            <% end %>
+          </div>
+
+          <div class="grid grid-cols-2 lg:grid-cols-3 gap-5">
+            <% @products.each do |product| %>
+              <div class="bg-gray-900 rounded-2xl p-5 border border-gray-800
+                          flex flex-col justify-between">
+                <div>
+                  <h3 class="text-lg font-bold mb-2 leading-tight">
+                    <%= product.name %>
+                  </h3>
+                  <div class="space-y-2 text-sm text-gray-400">
+                    <div>
+                      Einzelpreis:
+                      <span class="text-white font-semibold">
+                        <%= format("%.2f", product.price) %> €
+                      </span>
+                    </div>
+                    <% if product.has_crate? %>
+                      <div>
+                        Kasten:
+                        <span class="text-white font-semibold">
+                          <%= product.crate_size %> Flaschen
+                        </span>
+                      </div>
+                      <div>
+                        Kastenpreis:
+                        <span class="text-emerald-400 font-semibold">
+                          <%= format("%.2f", product.crate_price) %> €
+                        </span>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+
+                <div class="mt-5 space-y-3">
+                  <%# Einzelne Flasche %>
+                  <%= form_tag add_to_cart_kiosk_drinks_path, method: :post do %>
                     <%= hidden_field_tag :pin, params[:pin] %>
-                    <%= hidden_field_tag :product_id, item[:product].id %>
-                    <button type="submit" class="w-10 h-10 rounded-full text-red-600
-                        hover:text-red-500 flex items-center justify-center font-bold">
-                      ✕
+                    <%= hidden_field_tag :product_id, product.id %>
+                    <%= hidden_field_tag :quantity, 1 %>
+                    <button type="submit"
+                            data-action="cart#add"
+                            class="w-full bg-blue-700 hover:bg-blue-600
+                                   active:scale-95 transition-all duration-150
+                                   rounded-xl py-4 font-semibold">
+                      + 1 Flasche
                     </button>
                   <% end %>
+
+                  <%# Ganzer Kasten %>
+                  <% if product.has_crate? %>
+                    <%= form_tag add_to_cart_kiosk_drinks_path, method: :post do %>
+                      <%= hidden_field_tag :pin, params[:pin] %>
+                      <%= hidden_field_tag :product_id, product.id %>
+                      <%= hidden_field_tag :quantity, product.crate_size %>
+                      <button type="submit"
+                              data-action="cart#add"
+                              class="w-full bg-emerald-700 hover:bg-emerald-600
+                                     active:scale-95 transition-all duration-150
+                                     rounded-xl py-4 font-semibold">
+                        + 1 Kasten
+                      </button>
+                    <% end %>
+                  <% end %>
                 </div>
               </div>
             <% end %>
           </div>
+
+          <%# Warenkorb %>
+          <% if @cart_items.any? %>
+            <div class="mt-10 bg-gray-900 rounded-3xl p-8 border border-gray-800">
+              <h2 class="text-xl font-semibold mb-4 text-gray-300">🛒 Warenkorb</h2>
+
+              <div class="space-y-2 mb-4">
+                <% @cart_items.each do |item| %>
+                  <% is_crate = item[:product].has_crate? && item[:quantity] == item[:product].crate_size %>
+                  <% item_total = is_crate ? item[:product].crate_price_cents : item[:product].price_cents * item[:quantity] %>
+                  <div class="flex items-center justify-between"
+                       data-cart-row>
+                    <span class="text-gray-300">
+                      <%= item[:quantity] %>x <%= item[:product].name %>
+                      <% if is_crate %>
+                        <span class="text-emerald-400 text-xs ml-1">(Kastenpreis)</span>
+                      <% end %>
+                    </span>
+                    <div class="flex items-center gap-4">
+                      <span class="font-mono text-gray-300">
+                        <%= format("%.2f", item_total / 100.0) %> €
+                      </span>
+                      <%= form_tag remove_from_cart_kiosk_drinks_path, method: :post do %>
+                        <%= hidden_field_tag :pin, params[:pin] %>
+                        <%= hidden_field_tag :product_id, item[:product].id %>
+                        <button type="submit"
+                                data-action="cart#remove"
+                                class="w-10 h-10 rounded-full text-red-500
+                                       hover:text-red-400 hover:bg-gray-800
+                                       flex items-center justify-center font-bold
+                                       transition-all duration-150">
+                          ✕
+                        </button>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+
+              <div class="border-t border-gray-700 pt-4 mb-4
+                          flex justify-between items-center">
+                <span class="text-lg font-semibold">Gesamt</span>
+                <span class="text-2xl font-bold font-mono">
+                  <% if @is_mixed_crate %>
+                    <%= format("%.2f", CRATE_PRICE_CENTS / 100.0) %> €
+                  <% else %>
+                    <%= format("%.2f", @cart_total / 100.0) %> €
+                  <% end %>
+                </span>
+              </div>
+
+              <% if @total_quantity > 0 && !@is_mixed_crate %>
+                <p class="text-gray-500 text-sm mb-4">
+                  <%= @total_quantity %> / <%= CRATE_SIZE %> Flaschen –
+                  noch <%= CRATE_SIZE - @total_quantity %> bis zum Kastenpreis
+                </p>
+              <% end %>
+
+              <%= form_tag checkout_kiosk_drinks_path, method: :post do %>
+                <%= hidden_field_tag :pin, params[:pin] %>
+
+                <div class="mb-4 p-4 bg-gray-800 rounded-xl">
+                  <label for="sponsored" class="flex items-center gap-3 cursor-pointer">
+                    <%= check_box_tag :sponsored, "1", false,
+                          class: "w-6 h-6 rounded",
+                          id: "sponsored" %>
+                    <span class="text-gray-300 text-lg">
+                      Veranstaltung / Couleur
+                    </span>
+                  </label>
+                </div>
+
+                <div class="flex gap-3">
+                  <button type="submit"
+                          data-action="cart#checkout"
+                          class="flex-3 bg-emerald-600 hover:bg-emerald-500
+                                 active:scale-95 transition-all duration-150
+                                 py-5 rounded-xl text-xl font-bold">
+                    ✓ Bezahlen
+                  </button>
+                  <button type="submit"
+                          formaction="<%= clear_cart_kiosk_drinks_path %>"
+                          formmethod="post"
+                          data-action="cart#remove"
+                          class="flex-1 bg-gray-700 hover:bg-gray-600
+                                 active:scale-95 transition-all duration-150
+                                 py-5 rounded-xl text-xl font-bold">
+                    🗑
+                  </button>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
         </div>
 
-          <div class="border-t border-gray-700 pt-4 mb-6 flex justify-between items-center">
-            <span class="text-lg font-semibold">Gesamt</span>
-            <span class="text-2xl font-bold font-mono">
-              <% if @is_mixed_crate %>
-                <%= format("%.2f", CRATE_PRICE_CENTS / 100.0) %>
-              <% else %>
-                <%= format("%.2f", @cart_total / 100.0) %> €
-              <% end %>
-            </span>
-          </div>
+      <% else %>
+        <%# PIN-Eingabe %>
+        <div class="min-h-screen flex flex-col items-center justify-center">
+          <h1 class="text-3xl font-bold mb-2 text-center">
+            <%= current_organization.name %>
+          </h1>
+          <p class="text-gray-400 text-center mb-8">Bitte PIN eingeben</p>
 
-          <% if @total_quantity > 0 %>
-            <p class="text-gray-500 text-sm mb-2">
-              <%= @total_quantity %> / <%= CRATE_SIZE %> Flaschen -
-              noch <%= CRATE_SIZE - @total_quantity %> bis zum Kastenpreis
-            </p>
+          <%= form_with url: kiosk_root_path, method: :get,
+                data: { turbo: false } do |f| %>
+            <%= f.telephone_field :pin,
+                  maxlength: 4,
+                  inputmode: "numeric",
+                  pattern: "[0-9]*",
+                  autofocus: true,
+                  style: "-webkit-text-security: disc;",
+                  class: "w-full text-center text-3xl tracking-widest bg-gray-800
+                          border border-gray-700 rounded-xl px-4 py-4 mb-4",
+                  placeholder: "****" %>
+            <%= f.submit "Weiter",
+                  class: "w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl
+                          font-semibold cursor-pointer text-lg" %>
           <% end %>
-          <div class="mt-6">
-            <%= form_tag checkout_kiosk_drinks_path, method: :post do %>
-              <%= hidden_field_tag :pin, params[:pin] %>
-              <div class="mb-4 p-4 bg-gray-800 rounded-xl">
-                <label for="sponsored" class="flex items-center gap-3 cursor-pointer">
-                  <%= check_box_tag :sponsored, "1", false,
-                      class: "w-6 h-6 rounded",
-                      id: "sponsored" %>
-                  <span class="text-gray-300 text-lg">
-                    Veranstaltung / Couleur
-                  </span>
-                </label>
-              </div>
-              <div class="flex gap-3">
-                <button
-                  type="submit"
-                  class="flex-3 bg-emerald-600 hover:bg-emerald-500 py-5 rounded-xl text-xl font-bold active:scale-95 transition">
-                  ✓ Bezahlen
-                </button>
-                <button
-                  type="submit"
-                  formaction="<%= clear_cart_kiosk_drinks_path %>"
-                  formmethod="post"
-                  class="flex-1 bg-gray-700 hover:bg-gray-600 py-5 rounded-xl text-xl font-bold active:scale-95 transition">
-                  🗑
-                </button>
-              </div>
+
+          <div class="mt-8 text-center">
+            <%= link_to new_member_session_path,
+                  data: { turbo: false },
+                  class: "bg-gray-800 hover:bg-gray-700 transition rounded-xl
+                          px-5 py-3 text-gray-300 hover:text-white text-sm
+                          inline-flex items-center gap-2" do %>
+              🔑 Mitgliederbereich
             <% end %>
           </div>
-        <% end %>
-    <% else %>
-      <div class="min-h-screen flex flex-col items-center justify-center">
-        <h1 class="text-3xl font-bold mb-2 text-center"><%= current_organization.name %></h1>
-        <p class="text-gray-400 text-center mb-8">Bitte PIN eingeben</p>
-
-        <%= form_with url: kiosk_root_path, method: :get,
-          data: { turbo: false } do |f| %>
-          <%= f.telephone_field :pin,
-            maxlength: 4,
-            inputmode: "numeric",
-            pattern: "[0-9]*",
-            autofocus: true,
-            style: "-webkit-text-security: disc;",
-            class: "w-full text-center text-3xl tracking-widest bg-gray-800
-                    border border-gray-700 rounded-xl px-4 py-4 mb-4",
-            placeholder: "****" %>
-          <%= f.submit "Weiter",
-            class: "w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl
-                    font-semibold cursor-pointer text-lg" %>
-        <% end %>
-        <div class="mt-8 text-center">
-          <%= link_to new_member_session_path, data: { turbo: false },
-            class: "bg-gray-800 hover:bg-gray-700 transition rounded-xl px-5 py-3
-                    text-gray-300 hover:text-white text-sm inline-flex items-center gap-2" do %>
-            <span>🔑 Mitgliederbereich</span>
-          <% end %>
         </div>
-      </div>
-    <% end %>
+      <% end %>
+
+    </div>
   </div>
-</div>
 <% end %>

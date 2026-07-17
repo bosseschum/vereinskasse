@@ -70,16 +70,32 @@
           <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl font-semibold text-gray-300">Getränk wählen</h2>
             <%# Warenkorb-Badge %>
-            <% if @cart_items.any? %>
-              <div class="relative inline-block" data-cart-target="badge">
-                <span class="text-3xl">🛒</span>
-                <span data-cart-target="badgeCount"
-                      class="absolute -top-2 -right-2 bg-red-500 text-white
-                             text-xs rounded-full w-6 h-6 flex items-center
-                             justify-center font-bold">
-                  <%= @total_quantity %>
-                </span>
-              </div>
+            <% if cart_items.any? %>
+              <a href="#warenkorb"
+                  class="fixed top-4 right-4 z-50
+                  bg-gray-900 border border-gray-700
+                  rounded-2xl px-4 py-3
+                  shadow-xl hover:bg-gray-800
+                  transition-all duration-150">
+                <div class="relative">
+                    <span class="text-2xl">🛒</span>
+                    <span class="absolute -top-2 -right-2 bg-red-500 text-white
+                        text-xs rounded-full w-5 h-5 flex items-center
+                        justify-center font-bold">
+                      <%= @total_quantity %>
+                    </span>
+                </div>
+                <div class="text-sm">
+                  <p class="font-semibold text-white">
+                    <% if @is_mixed_crate %>
+                      <%= format("%.2f", CRATE_PRICE_CENTS / 100.0) %>€
+                    <% else %>
+                      <%= format("%.2f", @cart_total / 100.0) %>€
+                    <% end %>
+                  </p>
+                  <p class="text-gray-400 text-xs">zum Warenkorb</p>
+                </div>
+              </a>
             <% end %>
           </div>
 

@@ -1,4 +1,3 @@
-// app/javascript/controllers/cart_controller.js
 import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
@@ -34,8 +33,7 @@ export default class extends Controller {
     const btn = event.currentTarget;
 
     btn.textContent = "⏳ Wird gebucht...";
-    btn.disabled = true;
-    btn.classList.add("opacity-75", "cursor-not-allowed");
+    btn.classList.add("opacity-75", "cursor-not-allowed", "pointer-events-none");
     btn.classList.remove("hover:bg-green-500", "active:scale-95");
   }
 

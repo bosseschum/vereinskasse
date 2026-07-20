@@ -52,7 +52,10 @@
           <td class="px-4 py-3 text-gray-400 text-sm"><%= tx.note %></td>
           <td class="px-4 py-3 text-right font-mono
             <%= tx.amount_cents >= 0 ? 'text-green-400' : 'text-red-400' %>">
-            <%= format("%+.2f", (tx.original_amount_cents || tx.amount_cents) / 100.0) %>€
+            <%= format("%+.2f", (tx.amount_cents) / 100.0) %>€
+            <% if tx.original_amount_cents.present? && tx.original_amount_cents != tx.amount_cents.abs %>
+              <span class="text-xs text-gray-500 ml-1">(statt <%= format("%+.2f", (tx.original_amount_cents) / 100.0) %>€)</span>
+            <% end %>
             <% if tx.sponsored? %>
               <span class="text-xs text-gray-500 ml-1">(gesponsert)</span>
             <% end %>

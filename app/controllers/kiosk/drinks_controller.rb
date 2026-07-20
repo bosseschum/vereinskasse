@@ -92,6 +92,7 @@ class Kiosk::DrinksController < ApplicationController
 
       Transaction.create!(
         purchaser:             @purchaser,
+        organization:          current_organization,
         product:               product,
         amount_cents:          sponsored ? 0 : -actual_amount,
         original_amount_cents: full_amount,

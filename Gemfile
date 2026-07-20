@@ -69,6 +69,7 @@ group :development do
   gem "ruby-lsp", require: false
   gem "kanayago"
   gem "solargraph"
+  gem "letter_opener"
 end
 
 group :test do

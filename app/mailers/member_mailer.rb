@@ -20,10 +20,12 @@ class MemberMailer < ApplicationMailer
   def invoice(member, organization)
     @member = member
     @organization = organization
-    @transactions = member.transactions.where(organization: organization)
-      .order(created_at: :desc).limit(50)
-    @balance = member.transactions.where(organization: organization)
-      .not_sponsored.sum(:amount_cents) / 100.0
+
+    base_scope = member.transactions.where(organization: organization)
+    last_deposit = base_scope.where(kind: :deposit).order(created_at: :desc).pick(:created_at)
+    scoped = last_deposit ? base_scope.where("created_at >= ?", last_deposit) : base_scope
+    @transactions = scoped.order(created_at: :desc).limit(50)
+    @balance = base_scope.not_sponsored.sum(:amount_cents) / 100.0
 
     mail(
       to: member.email,

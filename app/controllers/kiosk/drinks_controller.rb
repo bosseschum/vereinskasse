@@ -81,27 +81,24 @@ class Kiosk::DrinksController < ApplicationController
 
     cart.each do |product_id, quantity|
       product = current_organization.products.find(product_id)
-      actual_amount = product.price_cents * quantity
+      full_amount = product.price_cents * quantity
+
+      if is_mixed_crate && !sponsored
+        reduced_per_bottle = CRATE_PRICE_CENTS / CRATE_SIZE
+        actual_amount = reduced_per_bottle * quantity
+      else
+        actual_amount = full_amount
+      end
 
       Transaction.create!(
         purchaser:             @purchaser,
         product:               product,
         amount_cents:          sponsored ? 0 : -actual_amount,
-        original_amount_cents: actual_amount,
+        original_amount_cents: full_amount,
         kind:                  :drink_purchase,
         quantity:              quantity,
         sponsored:             sponsored,
         note: "#{quantity}x #{product.name}#{is_mixed_crate ? " (Mischkasten)" : ""}#{sponsored ? " (gesponsert)" : ""}"
-      )
-    end
-
-    if is_mixed_crate && einzelpreis_gesamt > CRATE_PRICE_CENTS && !sponsored
-      rabatt = einzelpreis_gesamt - CRATE_PRICE_CENTS
-      Transaction.create!(
-        purchaser:    @purchaser,
-        amount_cents: rabatt,
-        kind:         :expense_reimbursement,
-        note:         "Kastenrabatt (#{total_quantity} Flaschen)"
       )
     end
 

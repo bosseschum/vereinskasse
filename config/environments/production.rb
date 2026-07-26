@@ -46,7 +46,8 @@ Rails.application.configure do
   config.require_master_key = true
 
   # Host-Validierung – alle Subdomains erlauben
-  config.hosts << /.*\..*/
+  config.hosts << /.*\.kontova\.de/
+  config.hosts << "kontova.de"
   config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
 
   config.default_url_options = { host: ENV["APP_HOST"], protocol: "https" }

@@ -1,6 +1,6 @@
 <div class="bg-gray-900 rounded-xl p-6 max-w-lg">
-  <%= form_with model: @product, url: @product.new_record? ?
-                                        inventory_products_path : inventory_product_path(@product) do |f| %>
+  <%= form_with model: product, url: product.new_record? ?
+                                        inventory_products_path : inventory_product_path(product) do |f| %>
 
     <div class="mb-4">
       <%= f.label :name, "Name", class: "block text-gray-400 text-sm mb-1" %>
@@ -32,7 +32,7 @@
       <%= f.label :active, "Aktiv (im Kiosk sichtbar)", class: "text-gray-300" %>
     </div>
 
-    <%= f.submit @product.new_record? ? "Anlegen" : "Speichern",
+    <%= f.submit product.new_record? ? "Anlegen" : "Speichern",
                  class: "w-full bg-emerald-600 hover:bg-emerald-500 py-3 rounded-lg font-semibold cursor-pointer" %>
   <% end %>
 </div>

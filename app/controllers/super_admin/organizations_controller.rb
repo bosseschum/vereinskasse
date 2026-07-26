@@ -38,6 +38,6 @@ class SuperAdmin::OrganizationsController < SuperAdmin::BaseController
   private
 
   def organization_params
-    params.require(:organization).permit(:name, :active)
+    params.require(:organization).permit(:name, :subdomain, :active)
   end
 end

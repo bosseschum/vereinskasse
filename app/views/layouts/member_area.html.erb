@@ -37,7 +37,7 @@
     </div>
 
     <nav class="bg-gray-900 border-b border-gray-800 px-6 py-4 flex gap-6 items-center overflow-auto">
-      <span class="font-bold text-lg text-purple-400"><%= current_organization.name || "Mein Konto" %></span>
+      <span class="font-bold text-lg text-purple-400 position-fixed"><%= current_organization.name || "Mein Konto" %></span>
       <%= link_to "Kiosk", kiosk_root_path,
         class: "text-gray-300 hover:text-white" %>
       <%= link_to "Übersicht", member_area_root_path,
@@ -46,7 +46,7 @@
         class: "text-gray-300 hover:text-white" %>
       <%= link_to "Profil", member_area_profile_path,
         class: "text-gray-300 hover:text-white" %>
-      <div class="ml-auto text-sm text-gray-500">
+      <div class="ml-auto text-sm text-gray-500 position-fixed">
         <%= current_member.display_name %> &nbsp;|&nbsp;
         <%= link_to "Abmelden", destroy_member_session_path,
           data: { turbo_method: :delete },

@@ -1,5 +1,5 @@
 <div class="bg-gray-900 rounded-xl p-6 max-w-lg">
-  <%= form_with model: [:super_admin, @organization], data: { turbo: false } do |f| %>
+  <%= form_with model: [:super_admin, organization], data: { turbo: false } do |f| %>
 
     <div class="mb-4">
       <%= f.label :name, "Vereinsname", class: "block text-gray-400 text-sm mb-1" %>
@@ -22,7 +22,7 @@
       <%= f.label :active, "Aktiv", class: "text-gray-300" %>
     </div>
 
-    <%= f.submit @organization.new_record? ? "Anlegen" : "Speichern",
+    <%= f.submit organization.new_record? ? "Anlegen" : "Speichern",
           class: "w-full bg-red-600 hover:bg-red-500 py-3 rounded-lg
                   font-semibold cursor-pointer" %>
   <% end %>

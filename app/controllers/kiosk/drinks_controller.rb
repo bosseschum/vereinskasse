@@ -24,7 +24,7 @@ class Kiosk::DrinksController < ApplicationController
       @total_quantity = @cart_items.sum { |i| i[:quantity] }
       @full_crates = @total_quantity / CRATE_SIZE
       @single_products = @total_quantity % CRATE_SIZE
-      @is_mixed_crate = @total_quantity == CRATE_SIZE
+      @is_mixed_crate = @total_quantity == CRATE_SIZE && @cart.keys.size > 1
       @cart_total = calculate_total(@cart, current_organization)
     end
   end
@@ -63,8 +63,7 @@ class Kiosk::DrinksController < ApplicationController
     end
 
     total_quantity = cart.values.sum
-    full_crate = total_quantity / CRATE_SIZE
-    single_product = total_quantity % CRATE_SIZE
+    is_mixed_crate = total_quantity == CRATE_SIZE && cart.keys.size > 1
 
     total = calculate_total(cart, current_organization)
 
@@ -76,50 +75,57 @@ class Kiosk::DrinksController < ApplicationController
 
     cart.each do |product_id, quantity|
       product = current_organization.products.find(product_id)
-      full_crate_for_product = quantity / CRATE_SIZE
-      single_product_for_product = quantity % CRATE_SIZE
-      full_amount = product.price_cents * quantity
+      crate_price_cents = product.has_crate? ? product.crate_price_cents : CRATE_PRICE_CENTS
 
-      if is_mixed_crate && !sponsored
-        reduced_per_bottle = CRATE_PRICE_CENTS / CRATE_SIZE
-        actual_amount = reduced_per_bottle * quantity
-      else
-        actual_amount = full_amount
-      end
-
-      if full_crate_for_product > 0
-        part = full_crate_for_product * CRATE_PRICE_CENTS
+      if is_mixed_crate && !sponsored && product.has_crate?
+        # Mischkasten: alle Flaschen zum Kasten-Stückpreis
+        per_bottle = crate_price_cents / product.crate_size
+        part = per_bottle * quantity
         Transaction.create!(
           purchaser:             @purchaser,
           product:               product,
-          amount_cents:          sponsored ? 0 : -part,
+          amount_cents:          -part,
           original_amount_cents: product.price_cents * quantity,
           kind:                  :drink_purchase,
-          quantity:              full_crate_for_product * CRATE_SIZE,
+          quantity:              quantity,
           sponsored:             sponsored,
-          note: "#{full_crate_for_product * CRATE_SIZE}x #{product.name} (#{full_crate_for_product} Kasten)"
+          note:                  "#{quantity}x #{product.name} (Mischkasten)"
         )
-      end
+      else
+        full_crate_for_product = quantity / CRATE_SIZE
+        single_product_for_product = quantity % CRATE_SIZE
 
-      if single_product_for_product > 0
-        part = single_product_for_product * product.price_cents
-        Transaction.create!(
-          purchaser:             @purchaser,
-          product:               product,
-          amount_cents:          sponsored ? 0 : -part,
-          original_amount_cents: part,
-          kind:                  :drink_purchase,
-          quantity:              single_product_for_product,
-          sponsored:             sponsored,
-          note: "#{single_product_for_product}x #{product.name}"
-        )
+        if full_crate_for_product > 0
+          part = full_crate_for_product * crate_price_cents
+          Transaction.create!(
+            purchaser:             @purchaser,
+            product:               product,
+            amount_cents:          sponsored ? 0 : -part,
+            original_amount_cents: product.price_cents * quantity,
+            kind:                  :drink_purchase,
+            quantity:              full_crate_for_product * CRATE_SIZE,
+            sponsored:             sponsored,
+            note: "#{full_crate_for_product * CRATE_SIZE}x #{product.name} (#{full_crate_for_product} Kasten)"
+          )
+        end
+
+        if single_product_for_product > 0
+          part = single_product_for_product * product.price_cents
+          Transaction.create!(
+            purchaser:             @purchaser,
+            product:               product,
+            amount_cents:          sponsored ? 0 : -part,
+            original_amount_cents: part,
+            kind:                  :drink_purchase,
+            quantity:              single_product_for_product,
+            sponsored:             sponsored,
+            note: "#{single_product_for_product}x #{product.name}"
+          )
+        end
       end
     end
 
-    session[:cart] = {}
-    redirect_to kiosk_root_path,
-      notice: "Einkauf abgeschlossen – #{format("%.2f", total / 100.0)} € gebucht!"
-  end
+
 
   def clear_cart
     session[:cart] = {}
@@ -129,11 +135,21 @@ class Kiosk::DrinksController < ApplicationController
   private
 
   def calculate_total(cart, organization)
+    total_quantity = cart.values.sum
+    is_mixed_crate = total_quantity == CRATE_SIZE && cart.keys.size > 1
+
     cart.sum do |product_id, quantity|
       product = organization.products.find(product_id)
       full_crate = quantity / CRATE_SIZE
-      single_product = quantity % CRATE_SIZE
-      (full_crate * CRATE_PRICE_CENTS) + (single_product * product.price_cents)
+      if is_mixed_crate && product.has_crate?
+        per_bottle = product.crate_price_cents / product.crate_size
+        per_bottle * quantity
+      else
+        full_crate = quantity / CRATE_SIZE
+        single_product = quantity % CRATE_SIZE
+        crate_price = product.has_crate? ? product.crate_price_cents : CRATE_PRICE_CENTS
+        (full_crate * crate_price) + (single_product * product.price_cents)
+      end
     end
   end
 end

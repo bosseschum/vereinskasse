@@ -168,7 +168,13 @@
                   <% product = item[:product] %>
                   <% full_crates    = qty / CRATE_SIZE %>
                   <% single_bottles = qty % CRATE_SIZE %>
-                  <% item_total = (full_crates * CRATE_PRICE_CENTS) + (single_bottles * product.price_cents) %>
+                  <% if @is_mixed_crate && product.has_crate? %>
+                    <% per_bottle = product.crate_price_cents / product.crate_size %>
+                    <% item_total = per_bottle * qty %>
+                  <% else %>
+                    <% crate_price = product.has_crate? ? product.crate_price_cents : CRATE_PRICE_CENTS %>
+                    <% item_total = (full_crates * crate_price) + (single_bottles * product.price_cents) %>
+                  <% end %>
 
                   <div class="flex items-center justify-between" data-cart-row>
                     <span class="text-gray-300">

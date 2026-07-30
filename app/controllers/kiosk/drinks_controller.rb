@@ -124,6 +124,7 @@ class Kiosk::DrinksController < ApplicationController
         end
       end
     end
+  end
 
 
 
